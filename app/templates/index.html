@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent RBAC Console</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            darkBg: '#090D16',     /* Premium slate black */
+                            panelBg: '#111827',    /* Card panel gray */
+                            borderColor: '#1F2937',/* Neutral border */
+                            activeBlue: '#3B82F6', /* Primary accent */
+                            successGreen: '#10B981',/* Success indicator */
+                            dangerRed: '#EF4444',  /* Danger indicator */
+                            warningAmber: '#F59E0B'/* Warning indicator */
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090D16;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090D16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1F2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body class="text-gray-200 antialiased min-h-screen flex flex-col font-sans">
+
+    <!-- Top Navigation Header -->
+    <nav class="bg-brand-panelBg border-b border-brand-borderColor px-8 py-4 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="text-brand-activeBlue text-base">
+                    <i class="fa-solid fa-circle-nodes"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold text-white tracking-tight flex items-center">
+                        Multi-Agent RBAC Console
+                        <span class="ml-2.5 h-1.5 w-1.5 rounded-full bg-brand-successGreen" title="Engine Connected"></span>
+                    </h1>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-[10px] text-gray-500 font-mono">v1.0.0</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Workspace Dashboard -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-6 lg:p-8 space-y-8">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Side (2 Columns): Workflow Control, Visual Node Trace, and CLI Console -->
+            <div class="lg:col-span-2 space-y-8">
+                
+                <!-- Prompt Playground Controller -->
+                <div class="bg-brand-panelBg p-6 rounded-xl border border-brand-borderColor shadow-sm space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xs font-semibold text-gray-300 uppercase tracking-wider font-mono">Workflow Playground</h2>
+                    </div>
+
+                    <form id="workflow-form" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <!-- Role Selection -->
+                            <div class="sm:col-span-1">
+                                <label for="user-role" class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider font-mono mb-2">User Clearance Role</label>
+                                <select id="user-role" class="w-full bg-brand-darkBg border border-brand-borderColor rounded-lg p-2.5 text-xs text-gray-300 focus:outline-none focus:border-brand-activeBlue font-mono">
+                                    <option value="Public">Public</option>
+                                    <option value="Employee">Employee</option>
+                                    <option value="Manager">Manager</option>
+                                    <option value="Executive">Executive</option>
+                                </select>
+                            </div>
+                            <!-- Prompt Input -->
+                            <div class="sm:col-span-2">
+                                <label for="prompt" class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider font-mono mb-2">Prompt Input Query</label>
+                                <input type="text" id="prompt" required class="w-full bg-brand-darkBg border border-brand-borderColor rounded-lg p-2.5 text-xs text-gray-200 focus:outline-none focus:border-brand-activeBlue font-sans" placeholder="e.g. 'Show me the financial strategy blueprint' or 'What is our corporate policy?'">
+                            </div>
+                        </div>
+                        <div class="flex justify-end pt-2">
+                            <button type="submit" id="run-btn" class="bg-brand-activeBlue hover:bg-blue-600 text-white font-semibold text-xs px-5 py-2.5 rounded-lg flex items-center space-x-2 transition duration-150">
+                                <span>Run Pipeline</span> <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Real-Time Trace Panel (Visual Pipeline Flow) -->
+                    <div id="trace-panel" class="hidden border-t border-brand-borderColor pt-6 space-y-6">
+                        <h3 class="text-xs font-semibold text-gray-350 uppercase tracking-wider font-mono">Pipeline Execution Trace</h3>
+                        
+                        <!-- Execution Graph Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <!-- Step 1: Router -->
+                            <div id="trace-router" class="bg-brand-darkBg p-4 rounded-lg border border-brand-borderColor space-y-2 transition duration-150">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-mono text-gray-500 uppercase">Step 1</span>
+                                    <i id="icon-router" class="fa-solid fa-minus text-[10px] text-gray-600"></i>
+                                </div>
+                                <h4 class="text-xs font-semibold text-white">Gateway Router</h4>
+                                <p id="text-router" class="text-[10px] text-gray-500 leading-relaxed">Awaiting prompt...</p>
+                            </div>
+
+                            <!-- Step 2: RAG Retrieval -->
+                            <div id="trace-retrieval" class="bg-brand-darkBg p-4 rounded-lg border border-brand-borderColor space-y-2 transition duration-150">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-mono text-gray-500 uppercase">Step 2</span>
+                                    <i id="icon-retrieval" class="fa-solid fa-minus text-[10px] text-gray-600"></i>
+                                </div>
+                                <h4 class="text-xs font-semibold text-white">Secure RAG</h4>
+                                <p id="text-retrieval" class="text-[10px] text-gray-500 leading-relaxed">Awaiting retrieval...</p>
+                            </div>
+
+                            <!-- Step 3: Analyst -->
+                            <div id="trace-analyst" class="bg-brand-darkBg p-4 rounded-lg border border-brand-borderColor space-y-2 transition duration-150">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-mono text-gray-500 uppercase">Step 3</span>
+                                    <i id="icon-analyst" class="fa-solid fa-minus text-[10px] text-gray-600"></i>
+                                </div>
+                                <h4 class="text-xs font-semibold text-white">Analyst Agent</h4>
+                                <p id="text-analyst" class="text-[10px] text-gray-500 leading-relaxed">Awaiting analysis...</p>
+                            </div>
+
+                            <!-- Step 4: Output Guardrail -->
+                            <div id="trace-guardrail" class="bg-brand-darkBg p-4 rounded-lg border border-brand-borderColor space-y-2 transition duration-150">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-mono text-gray-500 uppercase">Step 4</span>
+                                    <i id="icon-guardrail" class="fa-solid fa-minus text-[10px] text-gray-600"></i>
+                                </div>
+                                <h4 class="text-xs font-semibold text-white">Guardrail Agent</h4>
+                                <p id="text-guardrail" class="text-[10px] text-gray-500 leading-relaxed">Awaiting scan...</p>
+                            </div>
+                        </div>
+
+                        <!-- Retrieved Context Documents Section -->
+                        <div id="retrieved-documents-section" class="bg-brand-darkBg rounded-lg border border-brand-borderColor p-4 hidden space-y-3">
+                            <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider font-mono">Retrieved Context</p>
+                            <div id="retrieved-list" class="space-y-3 divide-y divide-brand-borderColor">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Final Aggregated Output -->
+                        <div class="bg-brand-darkBg rounded-lg border border-brand-borderColor p-5 space-y-3">
+                            <div class="flex justify-between items-center border-b border-brand-borderColor pb-2.5">
+                                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider font-mono">Response Output</p>
+                                <div id="warnings-container" class="flex gap-2"></div>
+                            </div>
+                            <div id="response-content" class="text-gray-100 text-sm whitespace-pre-wrap leading-relaxed"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live CLI State Machine Logs Console -->
+                <div class="bg-brand-panelBg rounded-xl border border-brand-borderColor p-6 space-y-4 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xs font-semibold text-gray-300 uppercase tracking-wider font-mono flex items-center">
+                            <i class="fa-solid fa-terminal text-brand-warningAmber mr-2.5 text-xs"></i> Console Output
+                        </h2>
+                    </div>
+                    <div class="bg-brand-darkBg rounded-lg border border-brand-borderColor p-4 h-48 overflow-y-auto code-font text-xs space-y-2 text-gray-450" id="terminal-console">
+                        <div class="text-gray-500 font-mono">[LOG] Server listening on http://127.0.0.1:8000</div>
+                        <div class="text-gray-500 font-mono">[LOG] Waiting for requests...</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Document Indexer & Knowledge List -->
+            <div class="space-y-8">
+                
+                <!-- Document Chunk Indexer Form -->
+                <div class="bg-brand-panelBg p-6 rounded-xl border border-brand-borderColor shadow-sm space-y-6">
+                    <div class="space-y-1">
+                        <h2 class="text-xs font-semibold text-gray-300 uppercase tracking-wider font-mono">Index Grounding Chunk</h2>
+                    </div>
+
+                    <form id="doc-upload-form" class="space-y-4">
+                        <div>
+                            <label for="doc-text" class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider font-mono mb-2">Context Document</label>
+                            <textarea id="doc-text" rows="4" required class="w-full bg-brand-darkBg border border-brand-borderColor rounded-lg p-3 text-xs text-gray-200 placeholder-gray-650 focus:outline-none focus:border-brand-successGreen transition duration-150" placeholder="Paste sensitive text chunk content here..."></textarea>
+                        </div>
+                        <div>
+                            <label for="doc-role" class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider font-mono mb-2">Required Clearance</label>
+                            <select id="doc-role" class="w-full bg-brand-darkBg border border-brand-borderColor rounded-lg p-2.5 text-xs text-gray-300 focus:outline-none focus:border-brand-successGreen font-mono">
+                                <option value="Public">Public</option>
+                                <option value="Employee">Employee</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Executive">Executive</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-end pt-1">
+                            <button type="submit" class="bg-brand-successGreen hover:bg-emerald-650 text-white font-semibold text-xs px-4 py-2 rounded-lg flex items-center space-x-1.5 transition duration-150 shadow-sm">
+                                <span>Index Chunk</span> <i class="fa-solid fa-upload text-[10px]"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Grounding File Corpus List Manager -->
+                <div class="bg-brand-panelBg p-6 rounded-xl border border-brand-borderColor shadow-sm space-y-6">
+                    <div class="flex justify-between items-center border-b border-brand-borderColor pb-3">
+                        <h2 class="text-xs font-semibold text-gray-300 uppercase tracking-wider font-mono">Knowledge Base</h2>
+                        <button id="clear-kb-btn" class="text-brand-dangerRed hover:text-red-400 text-[10px] font-semibold flex items-center space-x-1 transition duration-150">
+                            <i class="fa-solid fa-trash-can"></i> <span>Purge</span>
+                        </button>
+                    </div>
+
+                    <div class="overflow-y-auto max-h-64 border border-brand-borderColor rounded-lg">
+                        <table class="w-full text-left border-collapse text-[10px] font-mono">
+                            <thead class="bg-brand-darkBg text-gray-500 uppercase tracking-wider border-b border-brand-borderColor">
+                                <tr>
+                                    <th class="p-3">Role</th>
+                                    <th class="p-3">Snippet</th>
+                                </tr>
+                            </thead>
+                            <tbody id="doc-table-body" class="divide-y divide-brand-borderColor text-gray-300 font-sans text-xs">
+                                <!-- Appended dynamically -->
+                            </tbody>
+                        </table>
+                        <div id="no-docs-message" class="hidden p-6 text-center text-gray-600 font-mono text-[10px]">
+                            <p>No documents indexed. Use the form above to add grounding files.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-brand-panelBg border-t border-brand-borderColor py-6 text-center text-xs text-gray-500 font-mono">
+        <p>Production-grade developer interface. Safe, guardrailed, and RBAC secured.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        function logToConsole(message, type = 'info') {
+            const consoleBox = document.getElementById('terminal-console');
+            const time = new Date().toLocaleTimeString();
+            let color = 'text-gray-400';
+            
+            if (type === 'success') color = 'text-brand-successGreen';
+            else if (type === 'warning') color = 'text-brand-warningAmber';
+            else if (type === 'error') color = 'text-brand-dangerRed';
+            else if (type === 'sys') color = 'text-brand-activeBlue';
+
+            const logLine = document.createElement('div');
+            logLine.className = `${color} font-mono leading-relaxed`;
+            logLine.innerHTML = `[${time}] ${message}`;
+            consoleBox.appendChild(logLine);
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        // Fetch indexed documents list
+        async function fetchDocuments() {
+            try {
+                const res = await fetch('/api/documents');
+                const docs = await res.json();
+                
+                const tableBody = document.getElementById('doc-table-body');
+                const noDocsMsg = document.getElementById('no-docs-message');
+                tableBody.innerHTML = '';
+
+                if (docs.length === 0) {
+                    noDocsMsg.classList.remove('hidden');
+                    return;
+                } else {
+                    noDocsMsg.classList.add('hidden');
+                }
+
+                docs.forEach(doc => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-brand-darkBg transition duration-150 border-b border-brand-borderColor';
+                    
+                    row.innerHTML = `
+                        <td class="p-3 text-[10px] font-mono text-brand-activeBlue">${doc.required_role}</td>
+                        <td class="p-3 max-w-[160px] truncate text-gray-400 font-sans" title="${doc.text}">${doc.text}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Failed to load documents list:", err);
+            }
+        }
+
+        // Clear knowledge base docs
+        document.getElementById('clear-kb-btn').addEventListener('click', async () => {
+            if (!confirm("Are you sure you want to delete all documents from the knowledge base?")) return;
+            try {
+                const res = await fetch('/api/clear', { method: 'POST' });
+                if (res.ok) {
+                    logToConsole("Purged all database records.", 'error');
+                    await fetchDocuments();
+                }
+            } catch (err) {
+                console.error("Failed to clear documents:", err);
+            }
+        });
+
+        // Index new document chunk
+        document.getElementById('doc-upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const textInput = document.getElementById('doc-text').value.trim();
+            const requiredRole = document.getElementById('doc-role').value;
+
+            logToConsole(`Indexing new doc chunk [Role: ${requiredRole}]...`, 'sys');
+
+            try {
+                const res = await fetch('/api/document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: textInput,
+                        required_role: requiredRole
+                    })
+                });
+
+                if (res.ok) {
+                    logToConsole(`Indexed document chunk successfully!`, 'success');
+                    document.getElementById('doc-text').value = '';
+                    await fetchDocuments();
+                } else {
+                    const data = await res.json();
+                    logToConsole(`Failed to index document: ${data.detail}`, 'error');
+                }
+            } catch (err) {
+                logToConsole(`Failed to post document: ${err}`, 'error');
+            }
+        });
+
+        // Run multi-agent workflow playground
+        document.getElementById('workflow-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const promptVal = document.getElementById('prompt').value.trim();
+            const roleVal = document.getElementById('user-role').value;
+
+            // Reset trace cards
+            document.getElementById('trace-panel').classList.remove('hidden');
+            resetTraceVisualization();
+
+            logToConsole(`Launching agent workflow coordination for prompt: "${promptVal.slice(0, 35)}..."`, 'sys');
+            logToConsole(`Simulating clearance role: [${roleVal}]`, 'info');
+
+            // Set trace router card in progress
+            setTraceState('router', 'running', 'GatewayRouterAgent checking prompt injections...');
+
+            try {
+                const res = await fetch('/api/task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: promptVal,
+                        user_role: roleVal
+                    })
+                });
+
+                const data = await res.json();
+                
+                // Parse history steps and update visual trace
+                updateTraceVisualization(data.history, data);
+
+                // Show warnings
+                const warningsContainer = document.getElementById('warnings-container');
+                warningsContainer.innerHTML = '';
+                if (data.security_warnings && data.security_warnings.length > 0) {
+                    data.security_warnings.forEach(warn => {
+                        const warnLabel = document.createElement('span');
+                        warnLabel.className = 'text-[9px] font-mono font-semibold text-brand-warningAmber border border-brand-warningAmber/20 px-2 py-0.5 rounded';
+                        warnLabel.innerText = warn;
+                        warningsContainer.appendChild(warnLabel);
+                        logToConsole(`[WARNING] Output Guardrail: ${warn}`, 'warning');
+                    });
+                }
+
+                if (data.security_blocked) {
+                    const blockLabel = document.createElement('span');
+                    blockLabel.className = 'text-[9px] font-mono font-semibold text-brand-dangerRed border border-brand-dangerRed/20 px-2 py-0.5 rounded';
+                    blockLabel.innerText = 'BLOCKED';
+                    warningsContainer.appendChild(blockLabel);
+                    logToConsole(`Workflow execution halted by security gate: ${data.response}`, 'error');
+                }
+
+                // Show response content
+                document.getElementById('response-content').innerText = data.response;
+
+                // Show retrieved documents if any
+                const retrievedSec = document.getElementById('retrieved-documents-section');
+                const retrievedList = document.getElementById('retrieved-list');
+                retrievedList.innerHTML = '';
+                
+                if (data.context && data.context.length > 0) {
+                    retrievedSec.classList.remove('hidden');
+                    data.context.forEach((ctx, idx) => {
+                        const docDiv = document.createElement('div');
+                        docDiv.className = 'pt-2 text-xs space-y-1';
+                        docDiv.innerHTML = `
+                            <div class="flex justify-between font-mono text-[9px] text-gray-500">
+                                <span>Source ${idx + 1} | Relevance: ${(ctx.similarity * 100).toFixed(1)}%</span>
+                                <span>Role: ${ctx.required_role}</span>
+                            </div>
+                            <p class="text-gray-300 font-sans italic">"${ctx.text}"</p>
+                        `;
+                        retrievedList.appendChild(docDiv);
+                    });
+                } else {
+                    retrievedSec.classList.add('hidden');
+                }
+
+            } catch (err) {
+                logToConsole(`Workflow runtime execution failed: ${err}`, 'error');
+                setTraceState('router', 'error', 'Execution error');
+            }
+        });
+
+        function resetTraceVisualization() {
+            ['router', 'retrieval', 'analyst', 'guardrail'].forEach(step => {
+                const card = document.getElementById(`trace-${step}`);
+                card.className = 'bg-brand-darkBg p-4 rounded-lg border border-brand-borderColor space-y-2';
+                const icon = document.getElementById(`icon-${step}`);
+                icon.className = 'fa-solid fa-minus text-[10px] text-gray-600 animate-none';
+            });
+            document.getElementById('text-router').innerText = 'Awaiting launch...';
+            document.getElementById('text-retrieval').innerText = 'Awaiting launch...';
+            document.getElementById('text-analyst').innerText = 'Awaiting launch...';
+            document.getElementById('text-guardrail').innerText = 'Awaiting launch...';
+        }
+
+        function setTraceState(step, state, message) {
+            const card = document.getElementById(`trace-${step}`);
+            const icon = document.getElementById(`icon-${step}`);
+            const desc = document.getElementById(`text-${step}`);
+
+            desc.innerText = message;
+
+            if (state === 'running') {
+                card.className = 'bg-brand-panelBg p-4 rounded-lg border border-brand-activeBlue/50 shadow-sm space-y-2';
+                icon.className = 'fa-solid fa-spinner text-[10px] text-brand-activeBlue animate-spin';
+            } else if (state === 'success') {
+                card.className = 'bg-brand-panelBg p-4 rounded-lg border border-brand-borderColor space-y-2';
+                icon.className = 'fa-solid fa-circle-check text-[10px] text-brand-successGreen';
+            } else if (state === 'error') {
+                card.className = 'bg-brand-panelBg p-4 rounded-lg border border-brand-borderColor space-y-2';
+                icon.className = 'fa-solid fa-triangle-exclamation text-[10px] text-brand-dangerRed';
+            }
+        }
+
+        function updateTraceVisualization(history, fullData) {
+            let routerStep = history.find(h => h.agent === 'GatewayRouterAgent');
+            let retrievalStep = history.find(h => h.agent === 'SecureRetrievalAgent');
+            let analystStep = history.find(h => h.agent === 'AnalystAgent');
+            let guardrailStep = history.find(h => h.agent === 'GuardrailAgent');
+
+            if (routerStep) {
+                if (fullData.security_blocked && history.length === 1) {
+                    setTraceState('router', 'error', 'INJECTION BLOCKED');
+                    logToConsole('Router: Blocked malicious prompt injection input.', 'error');
+                    return;
+                } else {
+                    setTraceState('router', 'success', `Approved (${routerStep.latency_ms}ms)`);
+                    logToConsole(`Router: Input passed security checks in ${routerStep.latency_ms}ms.`, 'success');
+                }
+            }
+
+            if (retrievalStep) {
+                setTraceState('retrieval', 'running', 'Searching secure database...');
+                setTimeout(() => {
+                    const ctxCount = fullData.context ? fullData.context.length : 0;
+                    setTraceState('retrieval', 'success', `Retrieved ${ctxCount} chunks (${retrievalStep.latency_ms}ms)`);
+                    logToConsole(`Retrieval: Retrieved ${ctxCount} authorized chunks under role clearances in ${retrievalStep.latency_ms}ms.`, 'success');
+                }, 300);
+            }
+
+            if (analystStep) {
+                setTimeout(() => {
+                    setTraceState('analyst', 'running', 'Analyzing facts...');
+                    setTimeout(() => {
+                        setTraceState('analyst', 'success', `Analyzed (${analystStep.latency_ms}ms)`);
+                        logToConsole(`Analyst: Completed reasoning analysis in ${analystStep.latency_ms}ms.`, 'success');
+                    }, 400);
+                }, 600);
+            }
+
+            if (guardrailStep) {
+                setTimeout(() => {
+                    setTraceState('guardrail', 'running', 'Scanning final output...');
+                    setTimeout(() => {
+                        setTraceState('guardrail', 'success', `Scanned (${guardrailStep.latency_ms}ms)`);
+                        logToConsole(`Guardrail: Output checks complete. Responded safely.`, 'success');
+                    }, 400);
+                }, 1200);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await fetchDocuments();
+        });
+    </script>
+</body>
+</html>
