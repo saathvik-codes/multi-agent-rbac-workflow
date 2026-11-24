@@ -2,7 +2,7 @@
 
 A production-grade, highly secure **Multi-Agent Coordination Engine** (FastAPI/Python) that automates business workflows while enforcing strict Role-Based Access Control (RBAC) at the data layer and screening traffic using security guardrails.
 
-## 🚀 Key Features
+## Key Features
 
 1. **Custom State Machine Orchestrator**:
    * Chaining sequential execution of specialized agents: `GatewayRouter` → `SecureRetrieval` → `Analyst` → `Guardrail`.
@@ -19,7 +19,7 @@ A production-grade, highly secure **Multi-Agent Coordination Engine** (FastAPI/P
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 multi_agent_rbac_workflow/
@@ -52,7 +52,7 @@ multi_agent_rbac_workflow/
 
 ---
 
-## ⚙️ Installation & Setup
+## Installation & Setup
 
 ### 1. Requirements
 Ensure **Ollama** is running locally for local embeddings:
@@ -76,7 +76,7 @@ cp .env.example .env
 
 ---
 
-## 🧪 Testing
+## Testing
 
 Execute the test suite validating secure RAG retrieval, PII blocks, and prompt injection gates:
 ```bash
@@ -85,7 +85,7 @@ python -m pytest
 
 ---
 
-## 🖥️ Running the Server
+## Running the Server
 
 Start the FastAPI application:
 ```bash
